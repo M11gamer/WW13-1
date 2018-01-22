@@ -133,6 +133,7 @@
 	additional_languages = list( "German" = 33 )
 	is_officer = TRUE
 	is_squad_leader = TRUE
+	SL_check_independent = TRUE
 
 /datum/job/soviet/squad_leader/equip(var/mob/living/carbon/human/H)
 	if(!H)	return FALSE
@@ -202,6 +203,7 @@
 	spawn_location = "JoinLateRADr"
 	is_nonmilitary = TRUE
 	additional_languages = list( "German" = 100, "Ukrainian" = 50 )
+	SL_check_independent = TRUE
 
 /datum/job/soviet/doctor/equip(var/mob/living/carbon/human/H)
 	if(!H)	return FALSE
@@ -562,7 +564,7 @@ var/first_guard = FALSE
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/datum/job/soviet/zavhoz
+/datum/job/soviet/QM
 	title = "Zavhoz"
 	en_meaning = "Quartermaster"
 	total_positions = TRUE
@@ -571,8 +573,9 @@ var/first_guard = FALSE
 	additional_languages = list( "German" = 100 )
 	is_officer = TRUE
 	absolute_limit = TRUE
+	SL_check_independent = TRUE
 
-/datum/job/soviet/zavhoz/equip(var/mob/living/carbon/human/H)
+/datum/job/soviet/QM/equip(var/mob/living/carbon/human/H)
 	if(!H)	return FALSE
 
 	H.equip_to_slot_or_del(new /obj/item/clothing/under/sovuni/officer(H), slot_w_uniform)
@@ -590,8 +593,8 @@ var/first_guard = FALSE
 	H.setStat("medical", STAT_VERY_LOW)
 	return TRUE
 
-/datum/job/soviet/zavhoz/get_keys()
-	return list(new/obj/item/weapon/key/soviet, new/obj/item/weapon/key/soviet/soldat,  new/obj/item/weapon/key/soviet/QM, new/obj/item/weapon/key/soviet/bunker_doors, new/obj/item/weapon/key/soviet/command_intermediate)
+/datum/job/soviet/QM/get_keys()
+	return list(new/obj/item/weapon/key/soviet, new/obj/item/weapon/key/soviet/soldat,  new/obj/item/weapon/key/soviet/QM, new/obj/item/weapon/key/soviet/bunker_doors, new/obj/item/weapon/key/soviet/command_intermediate, new/obj/item/weapon/key/soviet/engineer)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
