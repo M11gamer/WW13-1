@@ -116,11 +116,7 @@
 	if(istype(speaker, /mob/living/carbon/human))
 		var/mob/living/carbon/human/H = speaker
 		if(H.voice)
-			speaker_name = H.voice
-	/*	for(var/datum/data/record/G in data_core.general)
-			if(G.fields["name"] == speaker_name)
-				speaker_name = H.rank_prefix_name(speaker_name)
-				break*/
+			speaker_name = H.rank_prefix_name(H.GetVoice()) // H.voice
 
 		if(H.age && H.gender)//If they have an age and gender
 			var/ageAndGender
@@ -149,11 +145,11 @@
 
 	if(sdisabilities & DEAF || ear_deaf)
 		if(prob(20))
-			src << "<span class='warning'>You feel your headset vibrate but can hear nothing from it!</span>"
+			src << "<span class='warning'>You feel your radio vibrate but can hear nothing from it!</span>"
 	else
 		var/fontsize = 2
 
-		if (speaker.original_job.is_officer)
+		if (speaker.original_job.is_officer || istype(speaker.original_job, /datum/job/german/trainsystem))
 			fontsize = 3
 
 		var/full_message = "<font size = [fontsize]><b><span class = [source.span_class()]>[source.bracketed_name()] [speaker_name] [message]</span></font>"
@@ -175,9 +171,9 @@
 		return
 
 	if(say_understands(speaker, language))
-		message = "<B>[src]</B> [verb], \"[message]\""
+		message = "<b>[src]</b> [verb], \"[message]\""
 	else
-		message = "<B>[src]</B> [verb]."
+		message = "<b>[src]</b> [verb]."
 
 	if(status_flags & PASSEMOTES)
 		for(var/obj/item/weapon/holder/H in contents)

@@ -78,6 +78,11 @@
 
 	var/gun_type = GUN_TYPE_GENERIC
 
+	var/autofiring = FALSE
+
+	var/gibs = FALSE
+	var/crushes = FALSE
+
 /obj/item/weapon/gun/New()
 	..()
 	if(!firemodes.len)
@@ -169,25 +174,31 @@
 		PreFire(A,user,params) //They're using the new gun system, locate what they're aiming at.
 		return
 
-
-	var/obj/item/weapon/gun/off_hand   //DUAL WIELDING
+	//DUAL WIELDING: only works with pistols edition
+	var/obj/item/weapon/gun/off_hand = null
 	if(ishuman(user) && user.a_intent == "harm")
 		var/mob/living/carbon/human/H = user
-		if(H.r_hand == src && istype(H.l_hand, /obj/item/weapon/gun))
-			off_hand = H.l_hand
+		if (istype(H.l_hand, /obj/item/weapon/gun/projectile/pistol))
+			if (istype(H.r_hand, /obj/item/weapon/gun/projectile/pistol))
+				if(H.r_hand == src)
+					off_hand = H.l_hand
 
-		else if(H.l_hand == src && istype(H.r_hand, /obj/item/weapon/gun))
-			off_hand = H.r_hand
+				else if(H.l_hand == src)
+					off_hand = H.r_hand
 
-		if(off_hand && off_hand.can_hit(user))
-			spawn(1)
-			off_hand.Fire(A,user,params)
+				if(off_hand && off_hand.can_hit(user))
+					spawn(1)
+					off_hand.Fire(A,user,params)
 
 	Fire(A,user,params) //Otherwise, fire normally.
 
 /obj/item/weapon/gun/attack(atom/A, mob/living/user, def_zone)
-	if (A == user && user.targeted_organ == "mouth" && !mouthshoot)
-		handle_suicide(user)
+	if (A == user)
+		if (user.targeted_organ == "mouth" && !mouthshoot)
+			handle_suicide(user)
+		else
+			handle_shoot_self(user)
+		return
 
 	if(user.a_intent == I_HURT && !bayonet) //point blank shooting
 		Fire(A, user, pointblank=1)
@@ -196,22 +207,16 @@
 			var/mob/living/L = A
 			var/mob/living/carbon/C = A
 			if (!istype(C) || !C.check_attack_throat(src, user))
-				if (prob(40) && L != user && !L.lying)
+				if (prob(50) && L != user && !L.lying)
 					visible_message("<span class = 'danger'>[user] tries to bayonet [L], but they miss!</span>")
 				else
 					var/obj/item/weapon/attachment/bayonet/a = bayonet
 					user.setClickCooldown(DEFAULT_ATTACK_COOLDOWN) // No more rapid stabbing for you.
 					visible_message("<span class = 'danger'>[user] impales [L] with their gun's bayonet!</span>")
-					if (ishuman(L))
-						var/mob/living/carbon/human/H = L
-						if (H.takes_less_bullet_damage) // mechahitler/megastalin
-							H.apply_damage(a.force, BRUTE, def_zone)
-							goto __playsound__
 					L.apply_damage(a.force * 2, BRUTE, def_zone)
 					L.Weaken(rand(1,2))
 					if (L.stat == CONSCIOUS && prob(50))
 						L.emote("scream")
-					__playsound__
 					playsound(get_turf(src), a.attack_sound, rand(90,100))
 			else
 				var/obj/item/weapon/attachment/bayonet/a = bayonet
@@ -289,6 +294,14 @@
 
 	if(!user || !target) return
 
+	// stops admemes from sending immortal dummies into combat
+	if (user)
+		if (istype(user, /mob/living/carbon/human/dummy))
+			if (user.client)
+				if (clients.len > 1)
+					user << "<span class = 'danger'>Hey you fucking meme, don't send immortal dummies into combat.</span>"
+					return
+
 	add_fingerprint(user)
 
 	if(!special_check(user))
@@ -358,10 +371,10 @@
 
 		process_accuracy(projectile, user, target, acc, disp)
 
-		if(pointblank) // oh so this is how pointblank works. Todo: delet this
+		if(pointblank)
 			if (istype(projectile, /obj/item/projectile))
 				var/obj/item/projectile/P = projectile
-				P.KD_chance *= 10
+				P.KD_chance = 100
 			process_point_blank(projectile, user, target)
 
 		if(process_projectile(projectile, user, target, user.targeted_organ, clickparams))
@@ -411,9 +424,9 @@
 //called after successfully firing
 /obj/item/weapon/gun/proc/handle_post_fire(mob/user, atom/target, var/pointblank=0, var/reflex=0)
 	if(silenced)
-		playsound(get_turf(user), fire_sound, 10, TRUE, 50)
+		playsound(get_turf(user), fire_sound, 10, TRUE, 100)
 	else
-		playsound(get_turf(user), fire_sound, 100, TRUE, 50)
+		playsound(get_turf(user), fire_sound, 100, TRUE, 100)
 
 		/*
 		if(reflex)
@@ -450,7 +463,7 @@
 		return //default behaviour only applies to true projectiles
 
 	//default point blank multiplier
-	var/damage_mult = 2
+	var/damage_mult = 1.33
 
 	//determine multiplier due to the target being grabbed
 	if(ismob(target))
@@ -518,10 +531,11 @@
 		return
 	var/mob/living/carbon/human/M = user
 
+	// realistic WW2 suicide, no hesitation - Kachnov
 	mouthshoot = TRUE
-	M.visible_message("\red [user] sticks their gun in their mouth, ready to pull the trigger...")
-	if(!do_after(user, 15))
-		M.visible_message("\blue [user] decided life was worth living")
+	M.visible_message("<span class = 'red'>[user] sticks their gun in their mouth.</span>")
+	if(!do_after(user, 3))
+		M.visible_message("<span class = 'notice'>[user] failed to commit suicide.</span>")
 		mouthshoot = FALSE
 		return
 	var/obj/item/projectile/in_chamber = consume_next_projectile()
@@ -545,6 +559,40 @@
 	else
 		handle_click_empty(user)
 		mouthshoot = FALSE
+		return
+
+// fixes shooting yourself bug - Kachnov
+/obj/item/weapon/gun/proc/handle_shoot_self(mob/living/user)
+	if(!ishuman(user))
+		return
+	var/mob/living/carbon/human/M = user
+
+	var/obj/item/projectile/in_chamber = consume_next_projectile()
+	if (istype(in_chamber))
+		var/damage_multiplier = 2.0
+		var/organ_name = replacetext(replacetext(user.targeted_organ, "l_", "left "), "r_", "right ")
+		switch (user.targeted_organ)
+			if ("l_hand", "r_hand", "l_foot", "r_foot")
+				damage_multiplier = 1.0
+			if ("chest")
+				damage_multiplier = 3.0
+
+		M.visible_message("<span class = 'red'>[user] shoots themselves in \the [organ_name]!</span>")
+		if(silenced)
+			playsound(user, fire_sound, 20, TRUE)
+		else
+			playsound(user, fire_sound, 100, TRUE)
+
+		in_chamber.on_hit(M)
+		if (in_chamber.damage_type != HALLOSS)
+			user.apply_damage(in_chamber.damage*damage_multiplier, in_chamber.damage_type, user.targeted_organ, used_weapon = "Point blank shot in the [user.targeted_organ] with \a [in_chamber]", sharp=1)
+		else
+			user << "<span class = 'notice'>Ow...</span>"
+			user.apply_effect(110,AGONY,0)
+		qdel(in_chamber)
+		return
+	else
+		handle_click_empty(user)
 		return
 
 /obj/item/weapon/gun/examine(mob/user)
@@ -627,7 +675,7 @@
 				G.unwield()
 			qdel(src)
 		else
-			user << "\red Something is WRONG!!"
+			user << "<span class = 'red'>Something is WRONG!!</span>"
 */
 
 /obj/item/weapon/offhand/update_icon()
@@ -649,20 +697,20 @@
 	if(!G || !istype(G))
 		G = get_inactive_hand()
 		if(!G || !istype(G))
-			src << "\red You can't wield anything in your hands."
+			src << "<span class = 'red'>You can't wield anything in your hands.</span>"
 			return
 
 	if(G.wielded)
-		src << "\red The [G.name] is already wielded."
+		src << "<span class = 'red'>The [G.name] is already wielded.</span>"
 		return
 
 	if(!G.can_wield)
-		usr << "\red You can't wield the [G.name]."
+		usr << "<span class = 'red'>You can't wield the [G.name].</span>"
 		return
 
 	G.wield(src)
 
-	usr << "\red You wielded the [G.name]."
+	usr << "<span class = 'red'>You wielded the [G.name].</span>"
 
 /mob/living/carbon/human/verb/unwield_weapon()
 	set name = "Unwield"
@@ -672,18 +720,18 @@
 	if(!G || !istype(G))
 		G = get_inactive_hand()
 		if(!G || !istype(G))
-			src << "\red You can't unwield anything in your hands."
+			src << "<span class = 'red'>You can't unwield anything in your hands.</span>"
 			return
 
 	if(!G.wielded)
-		src << "\red The [G.name] is not wielded."
+		src << "<span class = 'red'>The [G.name] is not wielded.</span>"
 		return
 
 	G.unwield(src)
 	//if(G != get_active_hand())
 	//	H:swap_hand()
 
-	usr << "\red You unwielded the [name]."
+	usr << "<span class = 'red'>You unwielded the [name].</span>"
 */
 /mob/living/carbon/human/verb/eject_magazine()
 	set name = "Eject magazine"
@@ -693,11 +741,11 @@
 	if(!G || !istype(G))
 		G = get_inactive_hand()
 		if(!G || !istype(G))
-			src << "\red You can't unload magazine from anything in your hands."
+			src << "<span class = 'red'>You can't unload magazine from anything in your hands.</span>"
 			return
 
 	if(G.load_method == MAGAZINE && G.ammo_magazine == null)
-		src << "\red The [G.name] is already unloaded."
+		src << "<span class = 'red'>The [G.name] is already unloaded.</span>"
 		return
 
 	//if(G.wielded)
@@ -720,7 +768,7 @@
 	if(!G || !istype(G))
 		G = get_inactive_hand()
 		if(!G || !istype(G))
-			src << "\red You have no weapon in hands."
+			src << "<span class = 'red'>You have no weapon in hands.</span>"
 			return
 
 	if(G.firemodes.len > TRUE)

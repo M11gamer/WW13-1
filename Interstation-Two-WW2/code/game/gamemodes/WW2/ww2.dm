@@ -2,7 +2,7 @@
 	name = "World War 2"
 	config_tag = "WW2"
 	#ifdef DEBUG
-	required_players = TRUE
+	required_players = 1
 	#else
 	required_players = 2
 	#endif
@@ -10,8 +10,6 @@
 	extended_round_description = ""
 
 	var/time_both_sides_locked = -1
-	var/german_win_coeff = 1.1 // germans gets S.S.
-	var/soviet_win_coeff = 1.0 // and soviets don't
 
 	var/cond_2_1_check1 = FALSE
 	var/cond_2_1_nextcheck = -1
@@ -42,7 +40,16 @@
 	#ifdef WINTER_TESTING
 	season = "WINTER"
 	#else
-	season = pick("SPRING", "SUMMER", "FALL", "WINTER")
+	if (config && config.allowed_seasons && config.allowed_seasons.len)
+		switch (config.allowed_seasons[1])
+			if (1) // all seasons
+				season = pick("SPRING", "SUMMER", "FALL", "WINTER")
+			if (0) // no seasons = spring
+				season = "SPRING"
+			else
+				season = pick(config.allowed_seasons)
+	else
+		season = pick("SPRING", "SUMMER", "FALL", "WINTER")
 	#endif
 
 // because we don't use readying up, we override can_start()
@@ -83,7 +90,7 @@
 /datum/game_mode/ww2/proc/trying_to_win()
 	return (cond_2_1_check1 || cond_2_2_check1 || cond_2_3_check1 || cond_2_4_check1)
 
-/datum/game_mode/ww2/check_finished()
+/datum/game_mode/ww2/check_finished(var/round_ending = FALSE)
 	if (admins_triggered_noroundend)
 		return FALSE // no matter what, don't end
 	else if (..() == TRUE || admins_triggered_roundend)
@@ -100,11 +107,11 @@
 		// wait 10 minutes and see who is doing the best
 
 		if (time_both_sides_locked != -1)
-			if (world.timeofday - time_both_sides_locked >= 6000)
+			if (world.time - time_both_sides_locked >= 6000)
 				return TRUE
 		else if (reinforcements_master.is_permalocked(GERMAN))
 			if (reinforcements_master.is_permalocked(SOVIET))
-				time_both_sides_locked = world.timeofday
+				time_both_sides_locked = world.time
 				world << "<font size = 3>Both sides are locked for reinforcements; the round will end in 10 minutes.</font>"
 				return FALSE
 
@@ -131,12 +138,12 @@
 		if (alive_soviets > alive_germans)
 			if (soviets_in_germany > germans_in_germany && !cond_2_1_check1 && !trying_to_win())
 				cond_2_1_check1 = TRUE
-				cond_2_1_nextcheck = world.timeofday + 3000
+				cond_2_1_nextcheck = world.time + 3000
 				world << "<font size = 3>The Soviets have occupied most German territory! The German Army has 5 minutes to reclaim their land!</font>"
 				return FALSE
 		else
 			if (cond_2_1_check1 == TRUE) // soviets lost control!
-				if(cond_2_1_nextcheck < world.timeofday + 2400)
+				if(cond_2_1_nextcheck < world.time + 2400)
 					world << "<font size = 3>The Soviets have lost control of the German territory they occupied!</font>"
 				else
 					return
@@ -149,12 +156,12 @@
 		if (alive_germans > alive_soviets)
 			if (germans_in_russia > soviets_in_russia && !cond_2_2_check1 && !trying_to_win())
 				cond_2_2_check1 = TRUE
-				cond_2_2_nextcheck = world.timeofday + 3000
+				cond_2_2_nextcheck = world.time + 3000
 				world << "<font size = 3>The Germans have occupied most Soviet territory! The Soviet Army has 5 minutes to reclaim their land!</font>"
 				return FALSE
 		else
 			if (cond_2_2_check1 == TRUE) // germans lost control!
-				if(cond_2_2_nextcheck < world.timeofday + 2400)
+				if(cond_2_2_nextcheck < world.time + 2400)
 					world << "<font size = 3>The Germans have lost control of the Soviet territory they occupied!</font>"
 				else
 					return
@@ -168,12 +175,12 @@
 		if ((germans_in_russia/1.33) > soviets_in_russia && !trying_to_win())
 			if(!cond_2_3_check1)
 				cond_2_3_check1 = TRUE
-				cond_2_3_nextcheck = world.timeofday + 6000
+				cond_2_3_nextcheck = world.time + 6000
 				world << "<font size = 3>The Germans have occupied most Soviet territory! The Soviet Army has 10 minutes to reclaim their land!</font>"
 				return FALSE
 		else
 			if (cond_2_3_check1 == TRUE) // soviets lost control!
-				if(cond_2_3_nextcheck < world.timeofday + 5400)
+				if(cond_2_3_nextcheck < world.time + 5400)
 					world << "<font size = 3>The Germans have lost control of the Soviet territory they occupied!</font>"
 				else
 					return
@@ -187,34 +194,34 @@
 		if ((soviets_in_germany/1.33) > germans_in_germany && !trying_to_win())
 			if(!cond_2_4_check1)
 				cond_2_4_check1 = TRUE
-				cond_2_4_nextcheck = world.timeofday + 6000
+				cond_2_4_nextcheck = world.time + 6000
 				world << "<font size = 3>The Soviets have occupied most German territory! The German Army has 10 minutes to reclaim their land!</font>"
 				return FALSE
 		else
 			if (cond_2_4_check1 == TRUE) // soviets lost control!
-				if(cond_2_4_nextcheck < world.timeofday + 5400)
+				if(cond_2_4_nextcheck < world.time + 5400)
 					world << "<font size = 3>The Soviets have lost control of the German territory they occupied!</font>"
 				else
 					return
 
 			cond_2_4_check1 = FALSE
 
-		if (cond_2_1_check1 && world.timeofday >= cond_2_1_nextcheck && cond_2_1_nextcheck != -1) // condition 2.1 completed
+		if (cond_2_1_check1 && (world.time >= cond_2_1_nextcheck || round_ending || admins_triggered_roundend) && cond_2_1_nextcheck != -1) // condition 2.1 completed
 			if (!win_condition) win_condition = "The Soviet Army won by outnumbering the Germans and occupying most of their territory, cutting them off from supplies!"
 			winning_side = "Soviet Army"
 			return TRUE
 
-		if (cond_2_2_check1 && world.timeofday >= cond_2_2_nextcheck && cond_2_2_nextcheck != -1) // condition 2.2 completed
+		if (cond_2_2_check1 && (world.time >= cond_2_2_nextcheck || round_ending || admins_triggered_roundend) && cond_2_2_nextcheck != -1) // condition 2.2 completed
 			if (!win_condition) win_condition = "The German Army won by outnumbering the Soviets and occupying most of their territory. The bunker was surrounded and cut off from reinforcements!"
 			winning_side = "German Army"
 			return TRUE
 
-		if (cond_2_3_check1 && world.timeofday >= cond_2_3_nextcheck && cond_2_3_nextcheck != -1) // condition 2.3 completed
+		if (cond_2_3_check1 && (world.time >= cond_2_3_nextcheck || round_ending || admins_triggered_roundend) && cond_2_3_nextcheck != -1) // condition 2.3 completed
 			if (!win_condition) win_condition = "The German Army won by occupying and holding Soviet territory, while heavily outnumber the Soviets there."
 			winning_side = "German Army"
 			return TRUE
 
-		if (cond_2_4_check1 && world.timeofday >= cond_2_4_nextcheck && cond_2_4_nextcheck != -1) // condition 2.4 completed
+		if (cond_2_4_check1 && (world.time >= cond_2_4_nextcheck || round_ending || admins_triggered_roundend) && cond_2_4_nextcheck != -1) // condition 2.4 completed
 			if (!win_condition) win_condition = "The Soviet Army won by occupying and holding German territory, while heavily outnumber the Germans there."
 			winning_side = "Soviet Army"
 			return TRUE
@@ -223,20 +230,13 @@
 
 /datum/game_mode/ww2/declare_completion()
 
+	check_finished(TRUE)
+
 	name = "World War 2"
 
 	var/list/soldiers = WW2_soldiers_alive()
-	var/WW2_soldiers_en_ru_coeff = WW2_soldiers_en_ru_ratio()
 
-	var/winners = winning_side
-
-	if (!winners)
-		if (WW2_soldiers_en_ru_coeff >= german_win_coeff)
-			winners = "German Army"
-		else if (WW2_soldiers_en_ru_coeff <= soviet_win_coeff)
-			winners = "Soviet Army"
-
-	var/text = "<big><span class = 'notice'>The War has ended.</span></big><br><br>"
+	var/text = "<big><span class = 'danger'>The battle has ended.</span></big><br><br>"
 
 	text += "[soldiers["de"]] Wehrmacht and SS soldiers survived.<br>"
 	text += "[soldiers["ru"]] Soviet soldiers survived.<br><br>"
@@ -256,8 +256,6 @@
 
 	for (var/client/client in clients)
 		client << "<br>"
-	//	print_spies(client, FALSE)
-	//	print_jews(client, FALSE)
 
 /datum/game_mode/ww2/announce() //to be called when round starts
 
@@ -299,7 +297,8 @@
 		// no tanks on lowpop
 		if (!istype(aspect, /datum/game_aspect/ww2/no_tanks))
 			if (clients.len <= TANK_LOWPOP_THRESHOLD)
-				for (var/obj/tank/T in world)
-					qdel(T)
-				world << "<i>Due to lowpop, there are no tanks.</i>"
+				if (locate(/obj/tank) in world)
+					for (var/obj/tank/T in world)
+						qdel(T)
+					world << "<i>Due to lowpop, there are no tanks.</i>"
 

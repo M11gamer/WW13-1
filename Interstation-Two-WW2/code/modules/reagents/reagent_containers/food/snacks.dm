@@ -715,7 +715,7 @@
 
 /obj/item/weapon/reagent_containers/food/snacks/donkpocket/sinpocket
 	name = "\improper Sin-pocket"
-	desc = "The food of choice for the veteran. Do <B>NOT</B> overconsume."
+	desc = "The food of choice for the veteran. Do <b>NOT</b> overconsume."
 	filling_color = "#6D6D00"
 	heated_reagents = list("doctorsdelight" = 5, "hyperzine" = 0.75, "synaptizine" = 0.25)
 	var/has_been_heated = FALSE
@@ -1408,7 +1408,7 @@
 	New()
 		..()
 		reagents.add_reagent("protein", 8)
-		reagents.add_reagent("water", 5)
+		reagents.add_reagent("water", 15)
 		bitesize = 5
 
 /obj/item/weapon/reagent_containers/food/snacks/slimesoup
@@ -1462,7 +1462,7 @@
 	nutriment_amt = 8
 	New()
 		..()
-		reagents.add_reagent("water", 5)
+		reagents.add_reagent("water", 15)
 		bitesize = 5
 
 /obj/item/weapon/reagent_containers/food/snacks/nettlesoup
@@ -1791,7 +1791,7 @@
 		reagents.add_reagent("protein", 4)
 		reagents.add_reagent("tomatojuice", 5)
 		reagents.add_reagent("imidazoline", 5)
-		reagents.add_reagent("water", 5)
+		reagents.add_reagent("water", 15)
 		bitesize = 2
 
 /obj/item/weapon/reagent_containers/food/snacks/jelliedtoast
@@ -2121,7 +2121,7 @@
 		reagents.add_reagent("protein", 4)
 		reagents.add_reagent("tomatojuice", 5)
 		reagents.add_reagent("imidazoline", 5)
-		reagents.add_reagent("water", 5)
+		reagents.add_reagent("water", 15)
 		bitesize = 2
 
 /obj/item/weapon/reagent_containers/food/snacks/tossedsalad

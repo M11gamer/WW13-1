@@ -1,5 +1,15 @@
 //This file was auto-corrected by findeclaration.exe on 25.5.2012 20:42:33
 
+/proc/job2mobtype(rank)
+	for (var/datum/job/J in job_master.occupations)
+		if (J.title == rank)
+			if (istype(J, /datum/job/pillarman/pillarman))
+				return /mob/living/carbon/human/pillarman
+			else if (istype(J, /datum/job/pillarman/vampire))
+				return /mob/living/carbon/human/vampire
+			else
+				return /mob/living/carbon/human
+
 /mob/new_player
 	var/ready = FALSE
 	var/spawning = FALSE//Referenced when you want to delete the new_player later on in the code.
@@ -216,7 +226,7 @@
 			return TRUE
 
 		if(!ticker || ticker.current_state != GAME_STATE_PLAYING)
-			src << "\red The round is either not ready, or has already finished."
+			src << "<span class = 'red'>The round is either not ready, or has already finished.</span>"
 			return
 /*
 		if(!check_rights(R_ADMIN, FALSE))
@@ -384,7 +394,7 @@
 	close_spawn_windows()
 
 	job_master.AssignRole(src, rank, TRUE, reinforcements)
-	var/mob/living/character = create_character()	//creates the human and transfers vars and mind
+	var/mob/living/character = create_character(job2mobtype(rank))	//creates the human and transfers vars and mind
 	character = job_master.EquipRank(character, rank, TRUE)					//equips the human
 
 	job_master.relocate(character)
@@ -409,7 +419,7 @@
 		return FALSE
 	if (!ticker || ticker.current_state != GAME_STATE_PLAYING)
 		if (!nomsg)
-			usr << "\red The round is either not ready, or has already finished..."
+			usr << "<span class = 'red'>The round is either not ready, or has already finished.</span>"
 		return FALSE
 	if (!config.enter_allowed)
 		if (!nomsg)
@@ -438,13 +448,13 @@
 
 	if(job_master.is_side_locked(job.base_type_flag()))
 		if (!nomsg)
-			src << "\red Currently this side is locked for joining."
+			src << "<span class = 'red'>Currently this side is locked for joining.</span>"
 		return
 
 	spawning = TRUE
 	close_spawn_windows()
 	job_master.AssignRole(src, rank, TRUE)
-	var/mob/living/character = create_character()	//creates the human and transfers vars and mind
+	var/mob/living/character = create_character(job2mobtype(rank))	//creates the human and transfers vars and mind
 	character = job_master.EquipRank(character, rank, TRUE)					//equips the human
 	job_master.relocate(character)
 
@@ -462,12 +472,12 @@
 		if (character.original_job.base_type_flag() == SOVIET)
 			var/obj/item/device/radio/R = main_radios[SOVIET]
 			if (R && R.loc)
-				spawn (5)
+				spawn (10)
 					R.announce("[character.real_name], [rank], has arrived.", "Arrivals Announcement System")
 		else if (character.original_job.base_type_flag() == GERMAN)
 			var/obj/item/device/radio/R = main_radios[GERMAN]
 			if (R && R.loc)
-				spawn (5)
+				spawn (10)
 					R.announce("[character.real_name], [rank], has arrived.", "Arrivals Announcement System")
 
 	spawn (10)
@@ -491,7 +501,8 @@
 		PARTISAN = FALSE,
 		CIVILIAN = FALSE,
 		ITALIAN = FALSE,
-		UKRAINIAN = FALSE)
+		UKRAINIAN = FALSE,
+		PILLARMEN = FALSE)
 
 	var/prev_side = FALSE
 
@@ -535,6 +546,10 @@
 
 			// check if the faction is admin-locked
 
+
+			if (map && !map.job_enabled_specialcheck(job))
+				job_is_available = FALSE
+
 			if (istype(job, /datum/job/german/paratrooper) && !paratroopers_toggled)
 				job_is_available = FALSE
 
@@ -545,6 +560,12 @@
 				job_is_available = FALSE
 
 			if (istype(job, /datum/job/partisan/civilian) && !civilians_toggled)
+				job_is_available = FALSE
+
+			if (istype(job, /datum/job/german) && !job.is_SS && !germans_toggled)
+				job_is_available = FALSE
+
+			if (istype(job, /datum/job/soviet) && !soviets_toggled)
 				job_is_available = FALSE
 
 			// check if the job is admin-locked or disabled codewise
@@ -602,17 +623,19 @@
 	dat += "</center>"
 
 	// shitcode to hide jobs that aren't available
+	var/any_available_jobs = FALSE
 	for (var/key in available_jobs_per_side)
 		var/val = available_jobs_per_side[key]
-		if (val == FALSE)
+		if (val == 0)
 			var/replaced_faction_title = FALSE
-			for (var/v in TRUE to dat.len)
+			for (var/v in 1 to dat.len)
 				if (findtext(dat[v], "&[key]&") && !findtext(dat[v], "&&[key]&&"))
 					dat[v] = null
 				else if (!replaced_faction_title && findtext(dat[v], "&&[key]&&"))
 					dat[v] = "[replacetext(dat[v], "&&[key]&&", "")] (<span style = 'color:red'>FACTION DISABLED BY AUTOBALANCE</span>)"
 					replaced_faction_title = TRUE
 		else
+			any_available_jobs = TRUE
 			var/replaced_faction_title = FALSE
 			for (var/v in TRUE to dat.len)
 				if (findtext(dat[v], "&[key]&") && !findtext(dat[v], "&&[key]&&"))
@@ -621,6 +644,9 @@
 					dat[v] = replacetext(dat[v], "&&[key]&&", "")
 					replaced_faction_title = TRUE
 
+	if (!any_available_jobs)
+		src << "<span class = 'danger'><font size = 3>All jobs are disabled by autobalance! Please join a reinforcements queue to play.</font></span>"
+		return
 
 	var/data = ""
 	for (var/line in dat)
@@ -631,7 +657,7 @@
 	spawn (1)
 		src << browse(data, "window=latechoices;size=600x640;can_close=1")
 
-/mob/new_player/proc/create_character()
+/mob/new_player/proc/create_character(mobtype)
 
 	if (delayed_spawning_as_job)
 		delayed_spawning_as_job.total_positions += TRUE
@@ -651,10 +677,10 @@
 	if(chosen_species && use_species_name)
 		// Have to recheck admin due to no usr at roundstart. Latejoins are fine though.
 		if(is_species_whitelisted(chosen_species) || has_admin_rights())
-			new_character = new(loc, use_species_name)
+			new_character = new mobtype(loc, use_species_name)
 
 	if(!new_character)
-		new_character = new(loc)
+		new_character = new mobtype(loc)
 
 	new_character.lastarea = get_area(loc)
 

@@ -74,17 +74,17 @@
 				var/mob/living/carbon/C = usr
 				C.toggle_throw_mode()
 			else
-				usr << "\red This mob type cannot throw items."
+				usr << "<span class = 'red'>This mob type cannot throw items.</span>"
 			return
 		if(NORTHWEST)
 			if(iscarbon(usr))
 				var/mob/living/carbon/C = usr
 				if(!C.get_active_hand())
-					usr << "\red You have nothing to drop in your hand."
+					usr << "<span class = 'red'>You have nothing to drop in your hand.</span>"
 					return
 				drop_item()
 			else
-				usr << "\red This mob type cannot drop items."
+				usr << "<span class = 'red'>This mob type cannot drop items.</span>"
 			return
 
 //This gets called when you press the delete button.
@@ -92,7 +92,7 @@
 	set hidden = TRUE
 
 	if(!usr.pulling)
-		usr << "\blue You are not pulling anything."
+		usr << "<span class = 'notice'>You are not pulling anything.</span>"
 		return
 	usr.stop_pulling()
 
@@ -319,13 +319,13 @@
 			for(var/mob/M in range(mob, 1))
 				if(M.pulling == mob)
 					if(!M.restrained() && M.stat == FALSE && M.canmove && mob.Adjacent(M))
-						src << "\blue You're restrained! You can't move!"
+						src << "<span class = 'notice'>You're restrained! You can't move!</span>"
 						return FALSE
 					else
 						M.stop_pulling()
 
 		if(mob.pinned.len)
-			src << "\blue You're pinned to a wall by [mob.pinned[1]]!"
+			src << "<span class = 'notice'>You're pinned to a wall by [mob.pinned[1]]!</span>"
 			return FALSE
 
 		move_delay = world.time + mob.movement_delay()//set move delay
@@ -340,6 +340,13 @@
 		var/standing_on_snow = FALSE
 
 		if (F && F_is_valid_floor)
+
+			var/area/F_area = get_area(F)
+			if (F_area.weather == WEATHER_RAIN && !istype(F, /turf/floor/plating/cobblestone) && !istype(F, /turf/floor/plating/road))
+				F.muddy = TRUE
+			else
+				F.muddy = FALSE
+
 			var/obj/snow/S = F.has_snow()
 			var/snow_message = ""
 			var/snow_span = "notice"
@@ -374,7 +381,7 @@
 					mob << "<span class = '[snow_span]'>[snow_message]</span>"
 					mob.next_snow_message = world.time+100
 			else if (F.muddy)
-				standing_on_snow = rand(2,4)
+				standing_on_snow = rand(2,3)
 				mob << "<span class = 'warning'>The mud slows you down.</span>"
 
 		if (mob.velocity_lastdir != -1)
@@ -422,7 +429,7 @@
 					H.m_intent = "walk" // in case we don't have a m_intent HUD, somehow
 
 		if (!mob_is_observer && F_is_valid_floor)
-			move_delay += F.move_delay
+			move_delay += F.get_move_delay()
 
 		var/tickcomp = FALSE //moved this out here so we can use it for vehicles
 		if(config.Tickcomp)

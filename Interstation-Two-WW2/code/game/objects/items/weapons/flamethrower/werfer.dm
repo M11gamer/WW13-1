@@ -146,7 +146,7 @@
 	if(!ptank)
 		user << "<span class='notice'>Attach a plasma tank first!</span>"
 		return
-	var/dat = text({"<TT><B>Das Flammenwerfer (<a href='?src=\ref[src];light=1'>[lit ? "<font color='red'>Lit</font>" : "Unlit"]</a>)</B><BR>\n
+	var/dat = text({"<TT><b>Das Flammenwerfer (<a href='?src=\ref[src];light=1'>[lit ? "<font color='red'>Lit</font>" : "Unlit"]</a>)</b><BR>\n
 	Fullness: [fullness_percentage()]%<BR>\n
 	Amount to throw: <A HREF='?src=\ref[src];amount=-100'>-</A> <A HREF='?src=\ref[src];amount=-10'>-</A> <A HREF='?src=\ref[src];amount=-1'>-</A> [throw_amount] <A HREF='?src=\ref[src];amount=1'>+</A> <A HREF='?src=\ref[src];amount=10'>+</A> <A HREF='?src=\ref[src];amount=100'>+</A><BR>\n
 	Fire Width ([rwidth]): <A HREF='?src=\ref[src];rwidth=-1'>-</A> <A HREF='?src=\ref[src];rwidth=+1'>+</A>
@@ -179,12 +179,14 @@
 	if(href_list["rwidth"])
 		var/mod = text2num(href_list["rwidth"])
 		if (rwidth + mod + rheight > max_total_range)
+			usr << "<span class = 'danger'>To increase the width of the fire any more, you have to decrease the height of the fire.</span>"
 			return
 		rwidth = rwidth + mod
 		rwidth = Clamp(rwidth, 1, 7)
 	if(href_list["rheight"])
 		var/mod = text2num(href_list["rheight"])
 		if (rheight + mod + rwidth > max_total_range)
+			usr << "<span class = 'danger'>To increase the height of the fire any more, you have to decrease the width of the fire.</span>"
 			return
 		rheight = rheight + mod
 		rheight = Clamp(rheight, 1, 3)

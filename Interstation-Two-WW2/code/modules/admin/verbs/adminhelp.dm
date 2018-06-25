@@ -3,12 +3,12 @@
 	set name = "Adminhelp"
 
 	if(say_disabled)	//This is here to try to identify lag problems
-		usr << "\red Speech is currently admin-disabled."
+		usr << "<span class = 'red'>Speech is currently admin-disabled.</span>"
 		return
 
 	//handle muting and automuting
 	if(prefs.muted & MUTE_ADMINHELP)
-		src << "<font color='red'>Error: Admin-PM: You cannot send adminhelps (Muted).</font>"
+		src << "<span class = 'red'>Error: Admin-PM: You cannot send adminhelps (Muted).</span>"
 		return
 
 	adminhelped = TRUE //Determines if they get the message to reply by clicking the name.
@@ -27,12 +27,12 @@
 		return
 
 	//show it to the person adminhelping too
-	src << "<font color='blue'>PM to-<b>Staff </b>: [msg]</font>"
+	src << "<span class = 'notice'>PM to-<b>Staff </b>: [msg]</span>"
 	if (config.discordurl)
 		src << "<i>If no admins are online, please ping @Admin Team <a href = '[config.discordurl]'>in the discord</a>.</i>"
 	log_admin("HELP: [key_name(src)]: [msg]")
 
-	msg = "\blue <b><font color=red>Request for Help:: </font>[get_options_bar(mob, 2, TRUE, TRUE)]:</b> [msg]"
+	msg = "<span class = 'notice'><b><font color=red>Request for Help: </span>[get_options_bar(mob, 2, TRUE, TRUE)]:</b> [msg]</span>"
 
 	for(var/client/X in admins)
 		if((R_ADMIN|R_MOD) & X.holder.rights)

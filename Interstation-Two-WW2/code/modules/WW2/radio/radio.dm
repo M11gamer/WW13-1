@@ -108,7 +108,7 @@ var/global/list/default_ukrainian_channels = list(
 /obj/item/device/radio
 	icon = 'icons/obj/radio.dmi'
 	name = "station bounced radio"
-	desc = "A communication device. You can speak through it with ';' or ':b' when it's in your suit storage slot, and ':l' or ':r' when its in your hand."
+	desc = "A communication device. You can speak through it with ':b' when it's in your suit storage slot, and ':l' or ':r' when its in your hand. ';' speaks with the first radio available on your person."
 	suffix = "\[3\]"
 	icon_state = "walkietalkie"
 	item_state = "walkietalkie"
@@ -153,7 +153,7 @@ var/global/list/default_ukrainian_channels = list(
 		"Grenades" = /obj/structure/closet/crate/german_grenade,
 		"Panzerfausts" = /obj/structure/closet/crate/panzerfaust,
 		"Smoke Grenades" = /obj/structure/closet/crate/german_smoke_grenade, // too lazy to fix this typo rn
-		"Sandbags" = /obj/structure/closet/crate/sandbags,
+		"Sandbags Crate" = /obj/structure/closet/crate/sandbags,
 		"Flaregun Ammo" = /obj/structure/closet/crate/flares_ammo,
 		"Flares" = /obj/structure/closet/crate/flares,
 		"Bayonet" = /obj/structure/closet/crate/bayonets,
@@ -206,7 +206,7 @@ var/global/list/default_ukrainian_channels = list(
 		"Mines" = /obj/structure/closet/crate/bettymines,
 		"Grenades" = /obj/structure/closet/crate/soviet_grenade,
 		"Smoke Grenades" = /obj/structure/closet/crate/soviet_smoke_grenade, // too lazy to fix this typo rn
-		"Sandbags" = /obj/structure/closet/crate/sandbags,
+		"Sandbags Crate" = /obj/structure/closet/crate/sandbags,
 		"Flaregun Ammo" = /obj/structure/closet/crate/flares_ammo,
 		"Flares" = /obj/structure/closet/crate/flares,
 		"Bayonet" = /obj/structure/closet/crate/bayonets,
@@ -319,10 +319,10 @@ var/global/list/default_ukrainian_channels = list(
 	if (istype(src, /obj/item/device/radio/intercom) && !istype(src, /obj/item/device/radio/intercom/loudspeaker))
 		notyetmoved = FALSE
 		if (loc)
+			setup_announcement_system("Arrivals Announcement System", (faction == GERMAN ? DE_BASE_FREQ : SO_BASE_FREQ))
 			setup_announcement_system("Supplydrop Announcement System", (faction == GERMAN ? DE_SUPPLY_FREQ : SO_SUPPLY_FREQ))
 			setup_announcement_system("Reinforcements Announcement System", (faction == GERMAN ? DE_BASE_FREQ : SO_BASE_FREQ))
 			setup_announcement_system("High Command Announcement System", (faction == GERMAN ? DE_BASE_FREQ : SO_BASE_FREQ))
-			setup_announcement_system("Arrivals Announcement System", (faction == GERMAN ? DE_BASE_FREQ : SO_BASE_FREQ))
 			switch (faction)
 				if (GERMAN)
 					main_radios[GERMAN] = src
@@ -418,7 +418,7 @@ var/global/list/default_ukrainian_channels = list(
 
 	ui = nanomanager.try_update_ui(user, src, ui_key, ui, data, force_open)
 	if(!ui)
-		ui = new(user, src, ui_key, "radio_basic.tmpl", "[name]", 400, 430)
+		ui = new(user, src, ui_key, "radio.tmpl", "[name]", 400, 430)
 		ui.set_initial_data(data)
 		ui.open()
 
@@ -434,8 +434,11 @@ var/global/list/default_ukrainian_channels = list(
 
 	var/list/used_radio_turfs = list()
 	var/list/used_radios = list()
+	var/list/possible_radio_locations = range(1, src)
+	if (istype(loc, /obj/tank))
+		possible_radio_locations += contents
 
-	for (var/obj/item/device/radio/radio in range(1, src))
+	for (var/obj/item/device/radio/radio in possible_radio_locations)
 		if (!used_radio_turfs.Find(radio.faction))
 			used_radio_turfs[radio.faction] = list()
 		if (used_radio_turfs[radio.faction].Find(get_turf(radio)))
@@ -449,24 +452,24 @@ var/global/list/default_ukrainian_channels = list(
 		if (radio == s_store)
 			if (dd_hasprefix(message, ":b"))
 				message = copytext(message, 3)
-			//	log_debug("0 = [radio.name]")
 			else if (dd_hasprefix(message, ";"))
 				message = copytext(message, 2)
-			//	log_debug("1 = [radio.name]")
 			else
 				continue
 		else if (radio == l_hand)
-			if (!dd_hasprefix(message, ":l"))
-				continue
-			else
-			//	log_debug("2 = [radio.name]")
+			if (dd_hasprefix(message, ":l"))
 				message = copytext(message, 3)
+			else if (dd_hasprefix(message, ";"))
+				message = copytext(message, 2)
+			else
+				continue
 		else if (radio == r_hand)
-			if (!dd_hasprefix(message, ":r"))
-				continue
-			else
-			//	log_debug("3 = [radio.name]")
+			if (dd_hasprefix(message, ":r"))
 				message = copytext(message, 3)
+			else if (dd_hasprefix(message, ";"))
+				message = copytext(message, 2)
+			else
+				continue
 		else if (istype(radio.loc, /turf) && !radio.broadcasting)
 			continue
 
@@ -486,6 +489,8 @@ var/global/list/default_ukrainian_channels = list(
 				radio.broadcast(rhtml_encode(message), src, TRUE)
 
 /obj/item/device/radio/proc/broadcast(var/msg, var/mob/living/carbon/human/speaker, var/hardtohear = FALSE)
+
+	hardtohear = FALSE // wip
 
 	// ignore emotes.
 	if (dd_hasprefix(msg, "*"))
@@ -755,6 +760,8 @@ var/global/list/default_ukrainian_channels = list(
 	announcer.faction = faction
 	announcer.frequency = channel
 	announcer.speech_sound = speech_sound
+	announcer.icon = icon
+	announcer.icon_state = icon_state
 
 	// hackish code because radios need a mob, with a language, to announce
 	mobs[aname] = new/mob/living/carbon/human

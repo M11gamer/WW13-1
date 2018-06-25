@@ -9,13 +9,10 @@ var/list/admin_verbs_default = list(
 	/client/proc/hide_most_verbs,		//hides all our hideable adminverbs,
 	/client/proc/debug_variables,		//allows us to -see- the variables of any instance in the game. +VAREDIT needed to modify,
 	/client/proc/cmd_mentor_check_new_players,
-//	/client/proc/see_spies,
-//	/client/proc/see_jews,
 	/client/proc/see_soldiers,
 	/client/proc/see_bug_reports,
 	/client/proc/see_suggestions,
 	/client/proc/see_world_realtime
-//	/client/proc/deadchat				//toggles deadchat on/off,
 	)
 var/list/admin_verbs_admin = list(
 	/client/proc/add_to_server_whitelist,
@@ -35,7 +32,6 @@ var/list/admin_verbs_admin = list(
 	/client/proc/admin_ghost,			//allows us to ghost/reenter body at will,
 	/client/proc/toggle_view_range,		//changes how far we can see,
 	/datum/admins/proc/view_txt_log,	//shows the server log (diary) for today,
-	/datum/admins/proc/view_atk_log,	//shows the server combat-log, doesn't do anything presently,
 	/client/proc/cmd_admin_pm_context,	//right-click adminPM interface,
 	/client/proc/cmd_admin_pm_panel,	//admin-pm list,
 	/client/proc/cmd_admin_subtle_message,	//send an message to somebody as a 'voice in their head',
@@ -68,9 +64,9 @@ var/list/admin_verbs_admin = list(
 	/client/proc/allow_character_respawn,    // Allows a ghost to respawn ,
 //	/client/proc/aooc,
 
-// these break the game, they'll be added back when they don't
-//	/client/proc/change_human_appearance_admin,	// Allows an admin to change the basic appearance of human-based mobs ,
-//	/client/proc/change_human_appearance_self,	// Allows the human-based mob itself change its basic appearance ,
+// these break the game, they'll be added back when they don't - WIP
+	/client/proc/change_human_appearance_admin,	// Allows an admin to change the basic appearance of human-based mobs ,
+	/client/proc/change_human_appearance_self,	// Allows the human-based mob itself change its basic appearance ,
 	/client/proc/change_security_level,
 	/client/proc/view_chemical_reaction_logs,
 	/client/proc/allow_join_ruforce,
@@ -83,7 +79,8 @@ var/list/admin_verbs_admin = list(
 	/client/proc/removeHalfEmptyCases,
 	/client/proc/removeAllBlood,
 	/client/proc/toggle_jobs,
-	/client/proc/toggle_subfactions
+	/client/proc/toggle_factions,
+	/client/proc/forcibly_enable_faction
 
 )
 var/list/admin_verbs_ban = list(
@@ -102,6 +99,7 @@ var/list/admin_verbs_fun = list(
 	/client/proc/object_talk,
 	/client/proc/cmd_admin_dress,
 	/client/proc/cmd_admin_gib_self,
+	/client/proc/cmd_admin_crush_self,
 	/client/proc/drop_bomb,
 	/client/proc/everyone_random,
 	/client/proc/cinematic,
@@ -208,7 +206,6 @@ var/list/admin_verbs_hideable = list(
 	/client/proc/admin_ghost,
 	/client/proc/toggle_view_range,
 	/datum/admins/proc/view_txt_log,
-	/datum/admins/proc/view_atk_log,
 	/client/proc/cmd_admin_subtle_message,
 	/client/proc/cmd_admin_check_contents,
 	/client/proc/admin_call_shuttle,
@@ -221,6 +218,7 @@ var/list/admin_verbs_hideable = list(
 	/client/proc/object_talk,
 	/client/proc/cmd_admin_dress,
 	/client/proc/cmd_admin_gib_self,
+	/client/proc/cmd_admin_crush_self,
 	/client/proc/drop_bomb,
 	/client/proc/cinematic,
 //	/datum/admins/proc/toggle_aliens,
@@ -459,7 +457,7 @@ var/list/admin_verbs_host = list(
 			return
 		if(mob.invisibility == INVISIBILITY_OBSERVER)
 			mob.invisibility = initial(mob.invisibility)
-			mob << "\red <b>Invisimin off. Invisibility reset.</b>"
+			mob << "<span class = 'red'><b>Invisimin off. Invisibility reset.</b></span>"
 			mob.alpha = max(mob.alpha + 100, 255)
 		else
 			mob.invisibility = INVISIBILITY_OBSERVER
@@ -474,9 +472,9 @@ var/list/admin_verbs_host = list(
 	if(holder && mob)
 		visible_in_who = !visible_in_who
 		if (visible_in_who)
-			mob << "\blue You are now <b>visible</b> in Staffwho."
+			mob << "<span class = 'notice'>You are now <b>visible</b> in Staffwho.</span>"
 		else
-			mob << "\blue You are <b>no longer visible</b> in Staffwho."
+			mob << "<span class = 'notice'>You are <b>no longer visible</b> in Staffwho.</span>"
 
 /client/proc/player_panel()
 	set name = "Player Panel"
@@ -591,7 +589,7 @@ var/list/admin_verbs_host = list(
 			var/light_impact_range = input("Light impact range (in tiles):") as num
 			var/flash_range = input("Flash range (in tiles):") as num
 			explosion(epicenter, devastation_range, heavy_impact_range, light_impact_range, flash_range)
-	message_admins("\blue [ckey] creating an admin explosion at [epicenter.loc].")
+	message_admins("<span class = 'notice'>[ckey] creating an admin explosion at [epicenter.loc].</span>")
 /*
 
 /client/proc/give_disease2(mob/T as mob in mob_list) // -- Giacom
@@ -637,7 +635,7 @@ var/list/admin_verbs_host = list(
 		for (var/mob/V in hearers(O))
 			V.show_message(message, 2)
 		log_admin("[key_name(usr)] made [O] at [O.x], [O.y], [O.z]. make a sound")
-		message_admins("\blue [key_name_admin(usr)] made [O] at [O.x], [O.y], [O.z]. make a sound", TRUE)
+		message_admins("<span class = 'notice'>[key_name_admin(usr)] made [O] at [O.x], [O.y], [O.z]. make a sound.</span>", TRUE)
 
 
 /*
@@ -796,7 +794,7 @@ var/list/admin_verbs_host = list(
 	var/mob/living/carbon/human/M = input("Select mob.", "Edit Appearance") as null|anything in human_mob_list
 
 	if(!istype(M, /mob/living/carbon/human))
-		usr << "\red You can only do this to humans!"
+		usr << "<span class = 'red'>You can only do this to humans!</span>"
 		return
 	switch(alert("Are you sure you wish to edit this mob's appearance?",,"Yes","No"))
 		if("No")
@@ -879,7 +877,7 @@ var/list/admin_verbs_host = list(
 	T << "<span class='notice'>Move on.</span>"
 
 	log_admin("[key_name(usr)] told [key_name(T)] to man up and deal with it.")
-	message_admins("\blue [key_name_admin(usr)] told [key_name(T)] to man up and deal with it.", TRUE)
+	message_admins("<span class = 'notice'>[key_name_admin(usr)] told [key_name(T)] to man up and deal with it.</span>", TRUE)
 
 /client/proc/global_man_up()
 	set category = "Fun"
@@ -891,4 +889,4 @@ var/list/admin_verbs_host = list(
 		T << 'sound/voice/ManUp1.ogg'
 
 	log_admin("[key_name(usr)] told everyone to man up and deal with it.")
-	message_admins("\blue [key_name_admin(usr)] told everyone to man up and deal with it.", TRUE)
+	message_admins("<span class = 'notice'>[key_name_admin(usr)] told everyone to man up and deal with it.</span>", TRUE)

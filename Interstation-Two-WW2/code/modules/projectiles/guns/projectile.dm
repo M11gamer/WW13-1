@@ -74,6 +74,10 @@
 			ammo_magazine.stored_ammo -= chambered
 
 	if (chambered)
+		if (gibs)
+			chambered.BB.gibs = TRUE
+		if (crushes)
+			chambered.BB.crushes = TRUE
 		return chambered.BB
 	return null
 
@@ -100,9 +104,15 @@
 				var/obj/item/clothing/G = H.gloves
 				G.gunshot_residue = chambered.caliber
 
+	#define DISABLE_CASINGS // goodbye lag (EXPERIMENTAL) - Kachnov
+
 	switch(handle_casings)
 		if(EJECT_CASINGS) //eject casing onto ground.
-			chambered.loc = get_turf(src)
+			#ifndef DISABLE_CASINGS
+			var/area/src_area = get_area(src)
+			if (!istype(src_area, /area/prishtina/soviet/lift) && !istype(src_area, /area/prishtina/german/lift))
+				chambered.loc = get_turf(src)
+			#endif
 			playsound(loc, casing_sound, 50, TRUE)
 		if(CYCLE_CASINGS) //cycle the casing back to the end.
 			if(ammo_magazine)
@@ -130,6 +140,13 @@
 
 		if(!(load_method & AM.mag_type) || caliber != AM.caliber)
 			return //incompatible
+
+		if (istype(src, /obj/item/weapon/gun/projectile/boltaction))
+			var/obj/item/weapon/gun/projectile/boltaction/B = src
+			if (world.time <= B.next_reload)
+				user << "<span class='danger'>[src] is jammed.</span>"
+				return
+			B.next_reload = world.time + rand(22,33)
 
 		switch(AM.mag_type)
 			if(MAGAZINE)
@@ -171,6 +188,13 @@
 		if(loaded.len >= max_shells)
 			user << "<span class='warning'>[src] is full.</span>"
 			return
+
+		if (istype(src, /obj/item/weapon/gun/projectile/boltaction))
+			var/obj/item/weapon/gun/projectile/boltaction/B = src
+			if (world.time <= B.next_reload)
+				user << "<span class='danger'>[src] is jammed.</span>"
+				return
+			B.next_reload = world.time + rand(22,33)
 
 		user.remove_from_mob(C)
 		C.loc = src

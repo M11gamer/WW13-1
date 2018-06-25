@@ -3,21 +3,23 @@
 ****************************************************/
 
 //These control the damage thresholds for the various ways of removing limbs
+//Numbers below 1.0 = more damage required
+#define DROPLIMB_THRESHOLD_EDGE 0.8
+#define DROPLIMB_THRESHOLD_TEAROFF 0.7
+#define DROPLIMB_THRESHOLD_DESTROY 0.6
 
-// buffing these to see if it makes limbs explode less from bullets - Kachnov
-#define DROPLIMB_THRESHOLD_EDGE 5
-#define DROPLIMB_THRESHOLD_TEAROFF 4
-#define DROPLIMB_THRESHOLD_DESTROY 2
+// new min_broken_damage, max_damage values based off of damage values defines
+// in __projectiles.dm
 
 /obj/item/organ/external
 	name = "external"
 	min_broken_damage = 30
-	max_damage = FALSE
+	max_damage = 0
 	dir = SOUTH
 	organ_tag = "limb"
 
-	var/brute_mod = TRUE
-	var/burn_mod = TRUE
+	var/brute_mod = 1.0
+	var/burn_mod = 1.0
 
 	var/icon_name = null
 	var/body_part = null
@@ -44,7 +46,7 @@
 	var/obj/item/organ/external/parent
 	var/list/obj/item/organ/external/children
 	var/list/internal_organs = list() 	// Internal organs of this body part
-	var/damage_msg = "\red You feel an intense pain"
+	var/damage_msg = "<span class = 'red'>You feel an intense pain</span>"
 	var/broken_description
 	var/open = FALSE
 	var/stage = FALSE
@@ -1115,8 +1117,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	name = "upper body"
 	limb_name = "chest"
 	icon_name = "torso"
-	max_damage = 100
-	min_broken_damage = 50
+	min_broken_damage = 67
+	max_damage = 101
 	w_class = 5
 	body_part = UPPER_TORSO
 	vital = TRUE
@@ -1132,8 +1134,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	name = "lower body"
 	limb_name = "groin"
 	icon_name = "groin"
-	max_damage = 100
-	min_broken_damage = 35
+	min_broken_damage = 67
+	max_damage = 101
 	w_class = 5
 	body_part = LOWER_TORSO
 	vital = TRUE
@@ -1147,8 +1149,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	limb_name = "l_arm"
 	name = "left arm"
 	icon_name = "l_arm"
-	max_damage = 50
-	min_broken_damage = 30
+	min_broken_damage = 57
+	max_damage = 86
 	w_class = 3
 	body_part = ARM_LEFT
 	parent_organ = "chest"
@@ -1168,8 +1170,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	limb_name = "l_leg"
 	name = "left leg"
 	icon_name = "l_leg"
-	max_damage = 50
-	min_broken_damage = 30
+	min_broken_damage = 67
+	max_damage = 101
 	w_class = 3
 	body_part = LEG_LEFT
 	icon_position = LEFT
@@ -1191,7 +1193,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	limb_name = "l_foot"
 	name = "left foot"
 	icon_name = "l_foot"
-	min_broken_damage = 15
+	min_broken_damage = 38
+	max_damage = 57
 	w_class = 2
 	body_part = FOOT_LEFT
 	icon_position = LEFT
@@ -1218,7 +1221,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	limb_name = "l_hand"
 	name = "left hand"
 	icon_name = "l_hand"
-	min_broken_damage = 15
+	min_broken_damage = 38
+	max_damage = 57
 	w_class = 2
 	body_part = HAND_LEFT
 	parent_organ = "l_arm"
@@ -1243,8 +1247,8 @@ Note that amputating the affected organ does in fact remove the infection from t
 	limb_name = "head"
 	icon_name = "head"
 	name = "head"
-	max_damage = 75
-	min_broken_damage = 35
+	min_broken_damage = 38
+	max_damage = 57
 	w_class = 3
 	body_part = HEAD
 	vital = TRUE

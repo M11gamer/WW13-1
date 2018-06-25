@@ -37,6 +37,7 @@
 	* item/afterattack(atom,user,adjacent,params) - used both ranged and adjacent
 	* mob/RangedAttack(atom,params) - used only ranged, only used for tk and laser eyes but could be changed
 */
+
 /mob/proc/ClickOn(var/atom/A, var/params)
 
 	if(world.time <= next_click) // Hard check, before anything else, to avoid crashing
@@ -144,8 +145,8 @@
 			var/turf/atom_turf = get_turf(A)
 			var/list/neighbors = atom_turf.neighbors()
 
-			for (var/v in TRUE to max(rate/5, 2))
-				spawn (v * TRUE)
+			for (var/v in 1 to max(ceil(rate/2), 2))
+				spawn (v)
 					if (prob(20))
 						mg.force_fire(pick(neighbors), src)
 					else
@@ -431,7 +432,9 @@
 	if(scrambling)
 		return
 	if(!has_limbs)
-		src << "\red You can't even move yourself - you have no limbs!"
+		src << "<span class = 'red'>You can't even move yourself - you have no limbs!</span>"
+	if(weakened)
+		return
 	var/dx = A.x - x
 	var/dy = A.y - y
 	if(!dx && !dy) return
@@ -450,7 +453,7 @@
 
 		scrambling = TRUE
 		sleep(2)
-		visible_message("\red <b>[src]</b> crawls!")
+		visible_message("<span class = 'red'><b>[src]</b> crawls!</span>")
 		sleep(7)
 		Move(target)
 		scrambling = FALSE

@@ -45,6 +45,17 @@ default behaviour is:
 		return FALSE
 
 /mob/living/Bump(atom/movable/AM, yes)
+
+	// no more pushing people past prishtina blocks - Kachnov
+	if (istype(AM, /obj/structure/closet))
+		for (var/mob/living/carbon/human/H in AM)
+			if (map.check_prishtina_block(H, get_step(get_turf(AM), dir)))
+				return
+
+	else if (ishuman(AM))
+		if (map.check_prishtina_block(AM, get_step(get_turf(AM), dir)))
+			return
+
 	spawn(0)
 		if ((!( yes ) || now_pushing) || !loc)
 			return
@@ -162,7 +173,7 @@ default behaviour is:
 	if ((health < FALSE && health > (5-maxHealth))) // Health below Zero but above 5-away-from-death, as before, but variable
 		adjustOxyLoss(health + maxHealth * 2) // Deal 2x health in OxyLoss damage, as before but variable.
 		health = maxHealth - getOxyLoss() - getToxLoss() - getFireLoss() - getBruteLoss()
-		src << "\blue You have given up life and succumbed to death."
+		src << "<span class = 'notice'>You have given up life and succumbed to death.</span>"
 
 
 //This proc is used for mobs which are affected by pressure to calculate the amount of pressure that actually
@@ -221,6 +232,10 @@ default behaviour is:
 
 /mob/living/proc/adjustBruteLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	bruteloss = min(max(bruteloss + amount, FALSE),(maxHealth*2))
 	return TRUE
 
@@ -229,10 +244,18 @@ default behaviour is:
 
 /mob/living/proc/adjustOxyLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	oxyloss = min(max(oxyloss + amount, FALSE),(maxHealth*2))
 
 /mob/living/proc/setOxyLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	oxyloss = amount
 
 /mob/living/proc/getToxLoss()
@@ -240,10 +263,18 @@ default behaviour is:
 
 /mob/living/proc/adjustToxLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	toxloss = min(max(toxloss + amount, FALSE),(maxHealth*2))
 
 /mob/living/proc/setToxLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	toxloss = amount
 
 /mob/living/proc/getFireLoss()
@@ -251,6 +282,10 @@ default behaviour is:
 
 /mob/living/proc/adjustFireLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	fireloss = min(max(fireloss + amount, FALSE),(maxHealth*2))
 
 /mob/living/proc/getCloneLoss()
@@ -258,6 +293,10 @@ default behaviour is:
 
 /mob/living/proc/adjustCloneLoss(var/amount)
 	if(status_flags & GODMODE)	return FALSE	//godmode
+	if (ishuman(src))
+		var/mob/living/carbon/human/H = src
+		if (H.takes_less_damage)
+			amount /= H.getStatCoeff("strength")
 	cloneloss = min(max(cloneloss + amount, FALSE),(maxHealth*2))
 
 /mob/living/proc/setCloneLoss(var/amount)
@@ -482,7 +521,7 @@ default behaviour is:
 							var/obj/item/weapon/grab/G = pick(M.grabbed_by)
 							if (istype(G, /obj/item/weapon/grab))
 								for(var/mob/O in viewers(M, null))
-									O.show_message(text("\red [] has been pulled from []'s grip by []", G.affecting, G.assailant, src), TRUE)
+									O.show_message(text("<span class = 'red'>[] has been pulled from []'s grip by [].</span>", G.affecting, G.assailant, src), TRUE)
 								//G = null
 								qdel(G)
 						else
@@ -801,12 +840,12 @@ default behaviour is:
 	if (HUDneed.Find("pull"))
 		var/obj/screen/HUDthrow/HUD = HUDneed["pull"]
 		HUD.update_icon()
-
+/*
 	if(ishuman(AM))
 		var/mob/living/carbon/human/H = AM
 		if(H.pull_damage())
-			src << "\red <B>Pulling \the [H] in their current condition would probably be a bad idea.</B>"
-
+			src << "\red <b>Pulling \the [H] in their current condition would probably be a bad idea.</b>"
+*/
 	//Attempted fix for people flying away through space when cuffed and dragged.
 	if(ismob(AM))
 		var/mob/pulled = AM

@@ -42,16 +42,35 @@
 	set background = BACKGROUND_ENABLED
 
 	if (client)
-		if (world.timeofday >= next_weather_sound)
+		if (world.time >= next_weather_sound)
 			var/area/A = get_area(src)
 			if (A.weather == WEATHER_RAIN)
 				src << sound('sound/ambience/rain.ogg', channel = 777)
-				next_weather_sound = world.timeofday + 1500
+				next_weather_sound = world.time + 1500
 		else
 			var/area/A = get_area(src)
 			if (A.weather == WEATHER_NONE)
 				src << sound(null, channel = 777)
-				next_weather_sound = world.timeofday
+				next_weather_sound = world.time
+
+	if (istype(wear_mask, /obj/item/clothing/mask/stone))
+		if (prob(20) && mind && type == /mob/living/carbon/human)
+			var/datum/mind/M = mind
+			var/mob/living/carbon/human/vampire/V = new(get_turf(src), FALSE)
+			var/oldname = name
+			var/oldreal_name = real_name
+			spawn (12)
+				V.name = oldname
+				V.real_name = oldreal_name
+			M.transfer_to(V)
+			for (var/obj/item/I in contents)
+				var/I_was_equipped = isEquipped(I)
+				drop_from_inventory(I)
+				if (I_was_equipped)
+					equip_to_appropriate_slot(I)
+			visible_message("<span class = 'danger'>[src] becomes a Vampire!</span>")
+			crush(do_gibs = FALSE)
+			return
 
 	handle_zoom_stuff()
 
@@ -74,13 +93,16 @@
 
 	var/nutrition_water_loss_multiplier = mob_process.schedule_interval/20
 
-	switch (stat)
-		if (CONSCIOUS) // takes about 1333 ticks to start starving, or ~44 minutes
-			nutrition -= (0.30/getStatCoeff("survival")) * nutrition_water_loss_multiplier
-			water -= (0.30/getStatCoeff("survival")) * nutrition_water_loss_multiplier
-		if (UNCONSCIOUS) // takes over an hour to starve
-			nutrition -= (0.20/getStatCoeff("survival")) * nutrition_water_loss_multiplier
-			water -= (0.20/getStatCoeff("survival")) * nutrition_water_loss_multiplier
+	// hunger, thirst nerfed by 10% due to popular demand. It's still hardmode - Kachnov
+
+	if (has_hunger_and_thirst)
+		switch (stat)
+			if (CONSCIOUS) // takes about 1333 ticks to start starving, or ~44 minutes
+				nutrition -= (0.27/getStatCoeff("survival")) * nutrition_water_loss_multiplier
+				water -= (0.27/getStatCoeff("survival")) * nutrition_water_loss_multiplier
+			if (UNCONSCIOUS) // takes over an hour to starve
+				nutrition -= (0.18/getStatCoeff("survival")) * nutrition_water_loss_multiplier
+				water -= (0.18/getStatCoeff("survival")) * nutrition_water_loss_multiplier
 
 	if (stamina == max_stamina-1 && m_intent == "walk")
 		src << "<span class = 'good'>You feel like you can run for a while.</span>"
@@ -102,8 +124,14 @@
 
 	//No need to update all of these procs if the guy is dead.
 	if(stat != DEAD && !in_stasis)
-		//Organs and blood
+		// Organs and blood
 		handle_organs()
+
+		// Stop processing organs that aren't bad
+		for (var/obj/item/organ/external/E in bad_external_organs)
+			if (E.brute_dam == 0 && E.burn_dam == 0)
+				E.wounds.Cut()
+				bad_external_organs -= E
 
 		handle_blood()
 
@@ -161,7 +189,7 @@
 
 	if (disabilities & EPILEPSY)
 		if ((prob(1) && paralysis < TRUE))
-			src << "\red You have a seizure!"
+			src << "<span class = 'red'>You have a seizure!</span>"
 			for(var/mob/O in viewers(src, null))
 				if(O == src)
 					continue
@@ -346,11 +374,11 @@
 	var/temp_adj = FALSE
 	if(loc_temp < bodytemperature)			//Place is colder than we are
 		var/thermal_protection = get_cold_protection(loc_temp) //This returns a FALSE - TRUE value, which corresponds to the percentage of protection based on what you're wearing and what you're exposed to.
-		if(thermal_protection < TRUE)
+		if(thermal_protection < 0)
 			temp_adj = (1-thermal_protection) * ((loc_temp - bodytemperature) / BODYTEMP_COLD_DIVISOR)	//this will be negative
 	else if (loc_temp > bodytemperature)			//Place is hotter than we are
 		var/thermal_protection = get_heat_protection(loc_temp) //This returns a FALSE - TRUE value, which corresponds to the percentage of protection based on what you're wearing and what you're exposed to.
-		if(thermal_protection < TRUE)
+		if(thermal_protection < 0)
 			temp_adj = (1-thermal_protection) * ((loc_temp - bodytemperature) / BODYTEMP_HEAT_DIVISOR)
 
 	//Use heat transfer as proportional to the gas density. However, we only care about the relative density vs standard 101 kPa/20 C air. Therefore we can use mole ratios
@@ -404,9 +432,9 @@
 	var/difference = abs(current-loc_temp)	//get difference
 	var/increments// = difference/10			//find how many increments apart they are
 	if(difference > 50)
-		increments = difference/50
+		increments = difference/25
 	else
-		increments = difference/100
+		increments = difference/50
 	var/change = increments*boost	// Get the amount to change by (x per increment)
 	var/temp_change
 	if(current < loc_temp)

@@ -77,11 +77,11 @@
 	if(config.automute_on && !holder && last_message == message)
 		last_message_count++
 		if(last_message_count >= SPAM_TRIGGER_AUTOMUTE)
-			src << "\red You have exceeded the spam filter limit for identical messages. An auto-mute was applied."
+			src << "<span class = 'red'>You have exceeded the spam filter limit for identical messages. An auto-mute was applied.</span>"
 			cmd_admin_mute(mob, mute_type, TRUE)
 			return TRUE
 		if(last_message_count >= SPAM_TRIGGER_WARNING)
-			src << "\red You are nearing the spam filter limit for identical messages."
+			src << "<span class = 'red'>You are nearing the spam filter limit for identical messages.</span>"
 			return FALSE
 	else
 		last_message = message
@@ -155,14 +155,14 @@
 		return FALSE
 
 	if(byond_version < REAL_MIN_CLIENT_VERSION)		//Out of date client.
-		src << "<span class = 'danger'><font size = 3>Please upgrade to BYOND [REAL_MIN_CLIENT_VERSION] to play.</font></span>"
+		src << "<span class = 'danger'><font size = 4>Please upgrade to BYOND [REAL_MIN_CLIENT_VERSION] to play.</font></span>"
 		del(src)
 		return FALSE
 
 	if (config.resource_website)
 		preload_rsc = config.resource_website
 
-	src << "\red If the title screen is black, resources are still downloading. Please be patient until the title screen appears."
+	src << "<span class = 'red'>If the title screen is black, resources are still downloading. Please be patient until the title screen appears.</span>"
 
 	/*Admin Authorisation: */
 
@@ -381,7 +381,16 @@
 		'html/images/loading.gif',
 		'html/images/ntlogo.png',
 		'html/images/talisman.png',
-		'nano/templates/chem_disp.tmpl'
+		'UI/templates/appearance_changer_WW13.tmpl',
+		'UI/templates/chem_disp_WW13.tmpl',
+		'UI/templates/freezer_WW13.tmpl',
+		'UI/templates/layout_basic_WW13.tmpl',
+		'UI/templates/layout_default_WW13.tmpl',
+		'UI/templates/nav_WW13.tmpl',
+		'UI/templates/news_browser_WW13.tmpl',
+		'UI/templates/radio_WW13.tmpl',
+		'UI/templates/smartfridge_WW13.tmpl',
+		'UI/templates/vending_machine_WW13.tmpl'
 		)
 
 	spawn (10) //removing this spawn causes all clients to not get verbs.

@@ -45,7 +45,7 @@
 				H.updatehealth()
 				if(!(H.species && (H.species.flags)))
 					H.Weaken(2)
-				M << "\red <B>Your [affecting.name] gets slightly cut by \the [src]!</B>"
+				M << "<span class = 'red'><b>Your [affecting.name] gets slightly cut by \the [src]!</b></span>"
 				return ..()
 			if (prob (33))
 				playsound(loc, 'sound/effects/glass_step.ogg', 50, TRUE)
@@ -57,7 +57,7 @@
 				H.updatehealth()
 				if(!(H.species && (H.species.flags)))
 					H.Weaken(4)
-				M << "\red <B>Your [affecting.name] gets cut by \the [src]!</B>"
+				M << "<span class = 'red'><b>Your [affecting.name] gets cut by \the [src]!</b></span>"
 				return ..()
 			if (prob (33))
 				playsound(loc, 'sound/effects/glass_step.ogg', 50, TRUE)
@@ -69,30 +69,30 @@
 				H.updatehealth()
 				if(!(H.species && (H.species.flags)))
 					H.Weaken(5)
-				M << "\red <B>Your [affecting.name] gets deeply cut by \the [src]!</B>"
+				M << "<span class = 'red'><b>Your [affecting.name] gets deeply cut by \the [src]!</b></span>"
 				return ..()
 	..()
 
 /obj/structure/barbwire/attackby(obj/item/W as obj, mob/user as mob)
 	if(istype(W, /obj/item/weapon/wirecutters))
 		if(anchored)
-			user.visible_message("\blue \The [user] starts to cut through \the [src] with [W].")
+			user.visible_message("<span class = 'notice'>\The [user] starts to cut through \the [src] with [W].</span>")
 			if(!do_after(user,60))
-				user.visible_message("\blue \The [user] decides not to cut through the \the [src].")
+				user.visible_message("<span class = 'notice'>\The [user] decides not to cut through the \the [src].</span>")
 				return
-			user.visible_message("\blue \The [user] finishes cutting through \the [src]!")
+			user.visible_message("<span class = 'notice'>\The [user] finishes cutting through \the [src]!</span>")
 			playsound(loc, 'sound/items/Wirecutter.ogg', 50, TRUE)
 			qdel(src)
 			return
 
 	else if(istype(W, /obj/item/weapon/material/knife))
 		if(anchored)
-			user.visible_message("\blue \The [user] starts to cut through \the [src] with [W].")
+			user.visible_message("<span class = 'notice'>\The [user] starts to cut through \the [src] with [W].</span>")
 			if(!do_after(user,80))
-				user.visible_message("\blue \The [user] decides not to cut through \the [src].")
+				user.visible_message("<span class = 'notice'>\The [user] decides not to cut through \the [src].</span>")
 				return
 			if(prob(40))
-				user.visible_message("\blue \The [user] finishes cutting through \the [src]!")
+				user.visible_message("<span class = 'notice'>\The [user] finishes cutting through \the [src]!</span>")
 				playsound(loc, 'sound/items/Wirecutter.ogg', 50, TRUE)
 				qdel(src)
 				return
@@ -105,7 +105,7 @@
 					else
 						affecting = H.get_organ("r_hand")
 
-					user << "\red <B>Your hand slips, causing \the [src] to cut your [affecting.name] open!</B>"
+					user << "<span class = 'red'><b>Your hand slips, causing \the [src] to cut your [affecting.name] open!</b></span>"
 					playsound(loc, 'sound/effects/glass_step.ogg', 50, TRUE)
 					if(affecting.status & ORGAN_ROBOT)
 						return
